@@ -433,5 +433,29 @@ Return (RESULT REGION-ACTIVE) after the error."
     (vim-change-mode-to-default)
     (should-not (alist-get 'vim-normal-mode minor-mode-overriding-map-alist))))
 
+(define-derived-mode vim-test-rebind-mode nil "Rebind")
+
+(ert-deftest vim-test-op-rebind-jk ()
+  (vim-define-major-mode-map 'vim-test-rebind-mode)
+  (vim-major-mode-map-set 'vim-test-rebind-mode 'normal "j" #'ignore "k" #'ignore)
+  (should (equal (vim-test "|a\nb\nc" "j" :mode #'vim-test-rebind-mode) "|a\nb\nc"))
+  (should (equal (vim-test "|a\nb\nc" "d j" :mode #'vim-test-rebind-mode) "|c"))
+  (should (equal (vim-test-state "a\n|b\nc" "y k" :mode #'vim-test-rebind-mode)
+                 '(normal nil "a\nb\n"))))
+
+(defvar vim-test--eval nil)
+
+(ert-deftest vim-test-op-narrow-eval ()
+  (should (equal (vim-test "|a\nb\nc" "g - j") "|a\nb\n"))
+  (setq vim-test--eval nil)
+  (vim-test "|(setq vim-test--eval 1)" "g y y" :mode #'emacs-lisp-mode)
+  (should (equal vim-test--eval 1))
+  (vim-test "|(setq vim-test--eval 2)" "g y y" :mode #'lisp-interaction-mode)
+  (should (equal vim-test--eval 2))
+  (should (equal (vim-test-error "|a" "g y y") '("|a" nil))))
+
+(ert-deftest vim-test-visual-jump-item ()
+  (should (equal (vim-test-state "|(a b) c" "v m") '(visual "(a b" nil))))
+
 (provide 'vim-tests)
 ;;; vim-tests.el ends here

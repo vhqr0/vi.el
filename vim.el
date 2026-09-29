@@ -868,9 +868,12 @@ N is ignored."
 
 ;;; op
 
+(keymap-set vim-op-base-map "j" #'vim-j)
+(keymap-set vim-op-base-map "k" #'vim-k)
 (keymap-set vim-op-base-map "p" #'vim-ip)
 (keymap-set vim-op-base-map "o" #'vim-iW)
 (keymap-set vim-op-base-map "m" #'vim-%)
+(keymap-set vim-visual-mode-map "m" #'vim-%)
 
 (defmacro vim-define-op (key op-fn)
   "Define a vim op command on KEY with OP-FN."
@@ -946,6 +949,20 @@ A trailing newline is also excluded."
   (let ((bounds (vim-trim-region beg end)))
     (delete-indentation nil (car bounds) (cdr bounds))))
 
+(defvar vim-eval-function-alist
+  '((emacs-lisp-mode . eval-region))
+  "Alist of (MAJOR . FUNCTION) to eval a region in major mode MAJOR.
+FUNCTION is called with the beginning and end of the region.  A major
+mode uses the FUNCTION of its nearest ancestor in this alist.")
+
+(defun vim-eval-region (beg end)
+  "Eval the region between BEG and END by `vim-eval-function-alist'."
+  (if-let* ((eval-function (seq-some (lambda (major)
+                                       (alist-get major vim-eval-function-alist))
+                                     (derived-mode-all-parents major-mode))))
+      (funcall eval-function beg end)
+    (user-error "No eval function for %s" major-mode)))
+
 (vim-define-op "d" #'kill-region)
 (vim-define-op "c" #'vim-change-region)
 (vim-define-op "y" #'copy-region-as-kill)
@@ -957,6 +974,8 @@ A trailing newline is also excluded."
 (vim-define-op "<" #'indent-rigidly-left-to-tab-stop)
 (vim-define-op ">" #'indent-rigidly-right-to-tab-stop)
 (vim-define-op "gJ" #'vim-join-region)
+(vim-define-op "g-" #'narrow-to-region)
+(vim-define-op "gy" #'vim-eval-region)
 
 (keymap-set vim-visual-mode-map "u" #'vim-gu)
 (keymap-set vim-visual-mode-map "U" #'vim-gU)
