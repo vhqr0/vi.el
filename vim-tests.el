@@ -8,8 +8,6 @@
 
 (require 'ert)
 (require 'vim)
-(require 'vim-integrated)
-(require 'dired)
 
 (defvar python-indent-guess-indent-offset)
 
@@ -361,26 +359,25 @@ Return (RESULT REGION-ACTIVE) after the error."
         (should-not (memq #'vim-pending-op-post-command (default-value 'post-command-hook))))
     (vim-global-mode 1)))
 
+(define-derived-mode vim-test-override-mode nil "Override")
+
 (ert-deftest vim-test-major-mode-map ()
+  (vim-define-major-mode-map 'vim-test-override-mode)
+  (vim-major-mode-map-set 'vim-test-override-mode '(normal visual) "m" #'ignore)
   (with-current-buffer (vim-test--setup "|foo" #'text-mode)
     (should (eq (keymap-lookup nil "m") #'point-to-register)))
-  (let ((buffer (dired-noselect default-directory)))
-    (unwind-protect
-        (with-current-buffer buffer
-          (should vim-normal-mode)
-          (should (eq (keymap-lookup nil "m") #'dired-mark))
-          (should (eq (keymap-lookup nil "d") #'dired-flag-file-deletion))
-          (should (eq (keymap-lookup nil "j") #'dired-next-line))
-          (should (eq (keymap-lookup nil "w") #'vim-w))
-          (should (eq (keymap-lookup nil "g g") #'vim-gg))
-          (vim-change-mode-to-visual)
-          (should (eq (keymap-lookup nil "m") #'dired-mark))
-          (should (eq (keymap-lookup nil "i w") #'vim-iw))
-          (should (eq (keymap-lookup nil "<escape>") #'vim-exit-visual))
-          (vim-change-mode-to-normal)
-          (fundamental-mode)
-          (should (eq (keymap-lookup nil "m") #'point-to-register)))
-      (kill-buffer buffer))))
+  (with-current-buffer (vim-test--setup "|foo" #'vim-test-override-mode)
+    (should vim-normal-mode)
+    (should (eq (keymap-lookup nil "m") #'ignore))
+    (should (eq (keymap-lookup nil "w") #'vim-w))
+    (should (eq (keymap-lookup nil "g g") #'vim-gg))
+    (vim-change-mode-to-visual)
+    (should (eq (keymap-lookup nil "m") #'ignore))
+    (should (eq (keymap-lookup nil "i w") #'vim-iw))
+    (should (eq (keymap-lookup nil "<escape>") #'vim-exit-visual))
+    (vim-change-mode-to-normal)
+    (fundamental-mode)
+    (should (eq (keymap-lookup nil "m") #'point-to-register))))
 
 (ert-deftest vim-test-major-mode-map-set ()
   (vim-define-major-mode-map 'vim-test-major-mode)
