@@ -24,7 +24,7 @@ Or with `package-vc-install`:
 - insert: `vim-insert-mode`, the default in minibuffers.
 - visual: `vim-visual-mode`, entered automatically while the region is active.
 
-`<escape>` (or `C-z`) returns to normal state.  Turning off
+`<escape>` returns to normal state.  Turning off
 `vim-global-mode` leaves plain Emacs bindings.
 
 ## Keys

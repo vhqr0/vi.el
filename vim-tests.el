@@ -348,7 +348,9 @@ Return (RESULT REGION-ACTIVE) after the error."
 
 (ert-deftest vim-test-overwrite-more ()
   (should (equal (vim-test "|abc" "R x DEL y <escape>") "y|bc"))
-  (should (equal (vim-test "|abc" "R x RET y <escape>") "x\ny|c")))
+  (should (equal (vim-test "|abc" "R x RET") "x|bc"))
+  (should (equal (vim-test "|abc" "R x C-j") "x|bc"))
+  (should (equal (vim-test "|abc" "R x C-z y <escape>") "x\^Zy|")))
 
 (ert-deftest vim-test-global-mode-off ()
   (unwind-protect

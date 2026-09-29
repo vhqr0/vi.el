@@ -156,8 +156,7 @@ BINDINGS is a list of KEY DEFINITION pairs as in `keymap-set'."
           (alist-get 'vim-visual-mode minor-mode-overriding-map-alist) (alist-get 'visual maps)
           (alist-get 'vim-insert-mode minor-mode-overriding-map-alist) (alist-get 'insert maps))))
 
-(defvar-keymap vim-global-mode-map
-  "C-z" [escape])
+(defvar-keymap vim-global-mode-map)
 
 ;;;###autoload
 (define-minor-mode vim-global-mode
@@ -1285,19 +1284,17 @@ N is ignored."
     (forward-char 1)))
 
 (defun vim-overwrite ()
-  "Overwrite until escape."
+  "Overwrite until escape or return."
   (interactive)
   (let ((overwrite-mode 'overwrite-mode-textual)
         (inhibit-quit t)
         event)
     (force-mode-line-update)
-    (while (not (memq (setq event (read-event)) '(escape ?\e ?\C-z ?\C-g)))
+    (while (not (memq (setq event (read-event)) '(escape return ?\e ?\r ?\n ?\C-g)))
       (cond
        ((memq event '(?\d backspace))
         (unless (bolp)
           (backward-char 1)))
-       ((memq event '(?\r return))
-        (newline))
        ((characterp event)
         (let ((last-command-event event))
           (self-insert-command 1)))))
