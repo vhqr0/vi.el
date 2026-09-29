@@ -104,26 +104,30 @@ NEW-MODE is normal, visual, insert or nil for Emacs."
 
 (defvar vim-major-mode-map-alist nil
   "Alist of (MAJOR . MAPS) overriding vim maps in major mode MAJOR.
-MAPS is an alist of (MODE . MAP), where MODE is normal, visual or insert.")
+MAPS is an alist of (MODE . MAP), where MODE is normal, visual or insert.
+A major mode uses the MAPS of its nearest ancestor in this alist.")
 
-(defmacro vim-define-major-mode-map (major)
-  "Define normal, visual and insert override maps of major mode MAJOR."
-  (let ((maps (mapcar (lambda (mode)
-                        (list mode
-                              (intern (format "vim-%s-%s-override-map" major mode))
-                              (intern (format "vim-%s-mode-map" mode))))
-                      '(normal visual insert))))
-    `(progn
-       ,@(mapcar (lambda (map)
-                   (pcase-let ((`(,mode ,name ,parent) map))
-                     `(defvar-keymap ,name
-                        :parent ,parent
-                        :doc ,(format "Vim %s override map of `%s'." mode major))))
-                 maps)
-       (setf (alist-get ',major vim-major-mode-map-alist)
-             (list ,@(mapcar (lambda (map)
-                               `(cons ',(nth 0 map) ,(nth 1 map)))
-                             maps))))))
+(defun vim-define-major-mode-map (major)
+  "Define normal, visual and insert override maps of major mode MAJOR.
+Maps of the parent of MAJOR are defined first, and the maps of MAJOR
+inherit them.  A major mode already in `vim-major-mode-map-alist' or a map
+variable already bound is kept.  MAJOR must be loaded.  Return the maps."
+  (or (alist-get major vim-major-mode-map-alist)
+      (let ((parent-maps (if-let* ((parent (get major 'derived-mode-parent)))
+                             (vim-define-major-mode-map parent)
+                           (list (cons 'normal vim-normal-mode-map)
+                                 (cons 'visual vim-visual-mode-map)
+                                 (cons 'insert vim-insert-mode-map)))))
+        (setf (alist-get major vim-major-mode-map-alist)
+              (mapcar (lambda (parent-map)
+                        (let* ((mode (car parent-map))
+                               (name (intern (format "vim-%s-%s-override-map" major mode))))
+                          (unless (boundp name)
+                            (set-default name (define-keymap :parent (cdr parent-map)))
+                            (put name 'variable-documentation
+                                 (format "Vim %s override map of `%s'." mode major)))
+                          (cons mode (symbol-value name))))
+                      parent-maps)))))
 
 (defun vim-major-mode-map-set (major modes &rest bindings)
   "Set BINDINGS in the MODES override maps of major mode MAJOR.
@@ -145,7 +149,9 @@ BINDINGS is a list of KEY DEFINITION pairs as in `keymap-set'."
   (if (minibufferp)
       (vim-change-mode-to-insert)
     (vim-change-mode-to-normal))
-  (when-let* ((maps (alist-get major-mode vim-major-mode-map-alist)))
+  (when-let* ((maps (seq-some (lambda (major)
+                                (alist-get major vim-major-mode-map-alist))
+                              (derived-mode-all-parents major-mode))))
     (setf (alist-get 'vim-normal-mode minor-mode-overriding-map-alist) (alist-get 'normal maps)
           (alist-get 'vim-visual-mode minor-mode-overriding-map-alist) (alist-get 'visual maps)
           (alist-get 'vim-insert-mode minor-mode-overriding-map-alist) (alist-get 'insert maps))))

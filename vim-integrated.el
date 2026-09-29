@@ -29,9 +29,8 @@ in MAP; KEY alone is (KEY . KEY).  MODES is as in `vim-major-mode-map-set'."
     "c" "C" "d" "D" "m" "o" "O" "r" "R" "s" "S" "t" "T" "u" "U" "x" "X" "%" "=" "~")
   "Keys merged from `dired-mode-map'.")
 
-(vim-define-major-mode-map dired-mode)
-
 (with-eval-after-load 'dired
+  (vim-define-major-mode-map 'dired-mode)
   (vim-integrated-merge 'dired-mode '(normal visual) dired-mode-map vim-integrated-dired-keys))
 
 ;;; ibuffer
@@ -43,9 +42,8 @@ in MAP; KEY alone is (KEY . KEY).  MODES is as in `vim-major-mode-map-set'."
     "d" "D" "m" "o" "O" "s" "S" "t" "u" "U" "x" "%")
   "Keys merged from `ibuffer-mode-map'.")
 
-(vim-define-major-mode-map ibuffer-mode)
-
 (with-eval-after-load 'ibuffer
+  (vim-define-major-mode-map 'ibuffer-mode)
   (vim-integrated-merge 'ibuffer-mode '(normal visual) ibuffer-mode-map vim-integrated-ibuffer-keys))
 
 ;;; archive
@@ -57,9 +55,8 @@ in MAP; KEY alone is (KEY . KEY).  MODES is as in `vim-major-mode-map-set'."
     "C" "m" "o" "u")
   "Keys merged from `archive-mode-map'.")
 
-(vim-define-major-mode-map archive-mode)
-
 (with-eval-after-load 'arc-mode
+  (vim-define-major-mode-map 'archive-mode)
   (vim-integrated-merge 'archive-mode '(normal visual) archive-mode-map vim-integrated-archive-keys))
 
 ;;; image
@@ -76,9 +73,8 @@ in MAP; KEY alone is (KEY . KEY).  MODES is as in `vim-major-mode-map-set'."
   '("m" "u")
   "Keys merged from `image-mode-map'.")
 
-(vim-define-major-mode-map image-mode)
-
 (with-eval-after-load 'image-mode
+  (vim-define-major-mode-map 'image-mode)
   (vim-integrated-merge 'image-mode '(normal visual) image-mode-map vim-integrated-image-keys)
   (keymap-set image-mode-map "<remap> <vim-h>" #'image-backward-hscroll)
   (keymap-set image-mode-map "<remap> <vim-j>" #'image-next-line)
