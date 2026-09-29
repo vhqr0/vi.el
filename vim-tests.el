@@ -8,6 +8,8 @@
 
 (require 'ert)
 (require 'vim)
+(require 'vim-integrated)
+(require 'dired)
 
 (defvar python-indent-guess-indent-offset)
 
@@ -358,6 +360,39 @@ Return (RESULT REGION-ACTIVE) after the error."
         (should-not (memq #'vim-visual-post-command (default-value 'post-command-hook)))
         (should-not (memq #'vim-pending-op-post-command (default-value 'post-command-hook))))
     (vim-global-mode 1)))
+
+(ert-deftest vim-test-major-mode-map ()
+  (with-current-buffer (vim-test--setup "|foo" #'text-mode)
+    (should (eq (keymap-lookup nil "m") #'point-to-register)))
+  (let ((buffer (dired-noselect default-directory)))
+    (unwind-protect
+        (with-current-buffer buffer
+          (should vim-normal-mode)
+          (should (eq (keymap-lookup nil "m") #'dired-mark))
+          (should (eq (keymap-lookup nil "d") #'dired-flag-file-deletion))
+          (should (eq (keymap-lookup nil "j") #'dired-next-line))
+          (should (eq (keymap-lookup nil "w") #'vim-w))
+          (should (eq (keymap-lookup nil "g g") #'vim-gg))
+          (vim-change-mode-to-visual)
+          (should (eq (keymap-lookup nil "m") #'dired-mark))
+          (should (eq (keymap-lookup nil "i w") #'vim-iw))
+          (should (eq (keymap-lookup nil "<escape>") #'vim-exit-visual))
+          (vim-change-mode-to-normal)
+          (fundamental-mode)
+          (should (eq (keymap-lookup nil "m") #'point-to-register)))
+      (kill-buffer buffer))))
+
+(ert-deftest vim-test-major-mode-map-set ()
+  (vim-define-major-mode-map vim-test-major-mode)
+  (vim-major-mode-map-set 'vim-test-major-mode 'insert "<f11>" #'ignore)
+  (vim-major-mode-map-set 'vim-test-major-mode '(normal) "<f12>" #'ignore)
+  (should-not (keymap-lookup vim-vim-test-major-mode-normal-override-map "<f11>"))
+  (should (eq (keymap-lookup vim-vim-test-major-mode-insert-override-map "<f11>") #'ignore))
+  (should (eq (keymap-lookup vim-vim-test-major-mode-normal-override-map "<f12>") #'ignore))
+  (should-not (keymap-lookup vim-vim-test-major-mode-visual-override-map "<f12>"))
+  (should (eq (keymap-lookup vim-vim-test-major-mode-insert-override-map "<escape>") #'vim-exit-insert))
+  (should-error (vim-major-mode-map-set 'vim-test-no-mode 'normal "<f11>" #'ignore))
+  (should-error (vim-major-mode-map-set 'vim-test-major-mode 'emacs "<f11>" #'ignore)))
 
 (provide 'vim-tests)
 ;;; vim-tests.el ends here

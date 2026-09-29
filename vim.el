@@ -102,12 +102,53 @@ NEW-MODE is normal, visual, insert or nil for Emacs."
     (when vim-visual-mode
       (vim-change-mode-to-normal))))
 
+(defvar vim-major-mode-map-alist nil
+  "Alist of (MAJOR . MAPS) overriding vim maps in major mode MAJOR.
+MAPS is an alist of (MODE . MAP), where MODE is normal, visual or insert.")
+
+(defmacro vim-define-major-mode-map (major)
+  "Define normal, visual and insert override maps of major mode MAJOR."
+  (let ((maps (mapcar (lambda (mode)
+                        (list mode
+                              (intern (format "vim-%s-%s-override-map" major mode))
+                              (intern (format "vim-%s-mode-map" mode))))
+                      '(normal visual insert))))
+    `(progn
+       ,@(mapcar (lambda (map)
+                   (pcase-let ((`(,mode ,name ,parent) map))
+                     `(defvar-keymap ,name
+                        :parent ,parent
+                        :doc ,(format "Vim %s override map of `%s'." mode major))))
+                 maps)
+       (setf (alist-get ',major vim-major-mode-map-alist)
+             (list ,@(mapcar (lambda (map)
+                               `(cons ',(nth 0 map) ,(nth 1 map)))
+                             maps))))))
+
+(defun vim-major-mode-map-set (major modes &rest bindings)
+  "Set BINDINGS in the MODES override maps of major mode MAJOR.
+MODES is normal, visual or insert, or a list of them.
+BINDINGS is a list of KEY DEFINITION pairs as in `keymap-set'."
+  (let ((maps (alist-get major vim-major-mode-map-alist)))
+    (unless maps
+      (error "No override maps of %s" major))
+    (dolist (mode (ensure-list modes))
+      (let ((map (alist-get mode maps)))
+        (unless map
+          (error "No %s override map of %s" mode major))
+        (cl-loop for (key definition) on bindings by #'cddr
+                 do (keymap-set map key definition))))))
+
 (defun vim-change-mode-to-default ()
   "Change to the default vim mode of the current buffer."
   (interactive)
   (if (minibufferp)
       (vim-change-mode-to-insert)
-    (vim-change-mode-to-normal)))
+    (vim-change-mode-to-normal))
+  (when-let* ((maps (alist-get major-mode vim-major-mode-map-alist)))
+    (setf (alist-get 'vim-normal-mode minor-mode-overriding-map-alist) (alist-get 'normal maps)
+          (alist-get 'vim-visual-mode minor-mode-overriding-map-alist) (alist-get 'visual maps)
+          (alist-get 'vim-insert-mode minor-mode-overriding-map-alist) (alist-get 'insert maps))))
 
 (defvar-keymap vim-global-mode-map
   "C-z" [escape])
