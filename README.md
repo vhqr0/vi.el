@@ -35,8 +35,8 @@ Or with `package-vc-install`:
 - Ops: `d c y = gc gu gU g~ < > gJ`, and `ys` for surround.  Double the last
   key for the current line (`dd`, `gUU`).
 - Cmds: `D C Y x X s S r ~ J i I a A o O p P ds cs`.
-- Misc: `.` repeat, `u` undo, `U` redo, `v` / `V` select, `R` overwrite,
-  `\` run the next key in Emacs bindings, `:` `M-x`.
+- Misc: `.` repeat, `u` undo, `U` redo, `g;` last change, `v` / `V` select,
+  `R` overwrite, `\` run the next key in Emacs bindings, `:` `M-x`.
 
 A count goes either before the op or after it (`2dw`, `d2w`, `d2ib`) and may
 be negative.

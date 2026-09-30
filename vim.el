@@ -1270,6 +1270,20 @@ N is ignored."
         (call-interactively cmd)
       (execute-kbd-macro cmd))))
 
+(defun vim-goto-last-change ()
+  "Go to the position of the last change."
+  (interactive)
+  (when (eq buffer-undo-list t)
+    (user-error "No undo information in this buffer"))
+  (let ((pos (seq-some (lambda (entry)
+                         (pcase entry
+                           (`(,(and beg (pred integerp)) . ,(pred integerp)) beg)
+                           (`(,(pred stringp) . ,pos) (abs pos))))
+                       buffer-undo-list)))
+    (unless pos
+      (user-error "No change in this buffer"))
+    (goto-char pos)))
+
 (defun vim-select-line ()
   "Select lines."
   (interactive)
@@ -1321,6 +1335,7 @@ N is ignored."
 (keymap-set vim-normal-mode-map "'" #'jump-to-register)
 (keymap-set vim-normal-mode-map "R" #'vim-overwrite)
 (keymap-set vim-normal-mode-map "g f" #'find-file-at-point)
+(keymap-set vim-normal-mode-map "g ;" #'vim-goto-last-change)
 (keymap-set vim-normal-mode-map "g o" #'pop-global-mark)
 (keymap-set vim-normal-mode-map "g d" #'xref-find-definitions)
 (keymap-set vim-normal-mode-map "g r" #'revert-buffer-quick)

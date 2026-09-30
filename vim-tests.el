@@ -456,5 +456,16 @@ Return (RESULT REGION-ACTIVE) after the error."
 (ert-deftest vim-test-visual-jump-item ()
   (should (equal (vim-test-state "|(a b) c" "v m") '(visual "(a b" nil))))
 
+(ert-deftest vim-test-goto-last-change ()
+  (should (equal (vim-test "|abc def" "w i x <escape> 0 g ;") "abc |xdef"))
+  (should (equal (vim-test "|abc def" "w x 0 g ;") "abc |ef"))
+  (should (equal (vim-test "|abc def" "w x i y <escape> 0 g ;") "abc |yef"))
+  (with-temp-buffer
+    (should (eq buffer-undo-list t))
+    (should-error (vim-goto-last-change) :type 'user-error))
+  (with-temp-buffer
+    (buffer-enable-undo)
+    (should-error (vim-goto-last-change) :type 'user-error)))
+
 (provide 'vim-tests)
 ;;; vim-tests.el ends here
