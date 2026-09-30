@@ -56,25 +56,34 @@
   "i" vim-inner-tobj-map
   "a" vim-outer-tobj-map)
 
-(define-minor-mode vim-normal-mode
-  "Vim normal mode."
-  :lighter " <N>")
+(defvar-local vim-normal-mode nil
+  "Non-nil if vim normal mode is enabled.")
 
-(define-minor-mode vim-visual-mode
-  "Vim visual mode."
-  :lighter " <V>")
+(defvar-local vim-visual-mode nil
+  "Non-nil if vim visual mode is enabled.")
 
-(define-minor-mode vim-insert-mode
-  "Vim insert mode."
-  :lighter " <I>")
+(defvar-local vim-insert-mode nil
+  "Non-nil if vim insert mode is enabled.")
+
+(add-to-list 'minor-mode-alist '(vim-normal-mode " <N>"))
+(add-to-list 'minor-mode-alist '(vim-visual-mode " <V>"))
+(add-to-list 'minor-mode-alist '(vim-insert-mode " <I>"))
+
+(defvar-local vim-emulation-map-alist
+  (list (cons 'vim-normal-mode vim-normal-mode-map)
+        (cons 'vim-visual-mode vim-visual-mode-map)
+        (cons 'vim-insert-mode vim-insert-mode-map))
+  "Alist of vim maps in `emulation-mode-map-alists'.
+It is set locally to use the override maps of the major mode.")
 
 (defun vim-change-mode (&optional new-mode)
   "Change vim mode to NEW-MODE.
 NEW-MODE is normal, visual, insert or nil for Emacs."
   (interactive)
-  (vim-normal-mode (if (eq new-mode 'normal) 1 -1))
-  (vim-visual-mode (if (eq new-mode 'visual) 1 -1))
-  (vim-insert-mode (if (eq new-mode 'insert) 1 -1)))
+  (setq-local vim-normal-mode (eq new-mode 'normal)
+              vim-visual-mode (eq new-mode 'visual)
+              vim-insert-mode (eq new-mode 'insert))
+  (force-mode-line-update))
 
 (defalias 'vim-change-mode-to-emacs 'vim-change-mode
   "Change to Emacs mode.")
@@ -152,9 +161,10 @@ BINDINGS is a list of KEY DEFINITION pairs as in `keymap-set'."
   (when-let* ((maps (seq-some (lambda (major)
                                 (alist-get major vim-major-mode-map-alist))
                               (derived-mode-all-parents major-mode))))
-    (setf (alist-get 'vim-normal-mode minor-mode-overriding-map-alist) (alist-get 'normal maps)
-          (alist-get 'vim-visual-mode minor-mode-overriding-map-alist) (alist-get 'visual maps)
-          (alist-get 'vim-insert-mode minor-mode-overriding-map-alist) (alist-get 'insert maps))))
+    (setq-local vim-emulation-map-alist
+                (list (cons 'vim-normal-mode (alist-get 'normal maps))
+                      (cons 'vim-visual-mode (alist-get 'visual maps))
+                      (cons 'vim-insert-mode (alist-get 'insert maps))))))
 
 (defvar-keymap vim-global-mode-map)
 
@@ -165,9 +175,11 @@ BINDINGS is a list of KEY DEFINITION pairs as in `keymap-set'."
   (setq vim-pending-op-fn nil)
   (if vim-global-mode
       (progn
+        (add-to-list 'emulation-mode-map-alists 'vim-emulation-map-alist)
         (add-hook 'post-command-hook #'vim-pending-op-post-command)
         (add-hook 'after-change-major-mode-hook #'vim-change-mode-to-default)
         (add-hook 'post-command-hook #'vim-visual-post-command))
+    (setq emulation-mode-map-alists (delq 'vim-emulation-map-alist emulation-mode-map-alists))
     (remove-hook 'post-command-hook #'vim-pending-op-post-command)
     (remove-hook 'after-change-major-mode-hook #'vim-change-mode-to-default)
     (remove-hook 'post-command-hook #'vim-visual-post-command))

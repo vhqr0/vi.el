@@ -358,7 +358,8 @@ Return (RESULT REGION-ACTIVE) after the error."
         (vim-global-mode -1)
         (should-not (or vim-normal-mode vim-visual-mode vim-insert-mode))
         (should-not (memq #'vim-visual-post-command (default-value 'post-command-hook)))
-        (should-not (memq #'vim-pending-op-post-command (default-value 'post-command-hook))))
+        (should-not (memq #'vim-pending-op-post-command (default-value 'post-command-hook)))
+        (should-not (memq 'vim-emulation-map-alist emulation-mode-map-alists)))
     (vim-global-mode 1)))
 
 (define-derived-mode vim-test-override-mode nil "Override")
@@ -424,13 +425,13 @@ Return (RESULT REGION-ACTIVE) after the error."
   (with-temp-buffer
     (vim-test-grandchild-mode)
     (vim-change-mode-to-default)
-    (should (eq (alist-get 'vim-normal-mode minor-mode-overriding-map-alist)
+    (should (eq (alist-get 'vim-normal-mode vim-emulation-map-alist)
                 vim-vim-test-grandchild-mode-normal-override-map))
     (should (eq (keymap-lookup nil "<f11>") #'ignore)))
   (with-temp-buffer
     (text-mode)
     (vim-change-mode-to-default)
-    (should-not (alist-get 'vim-normal-mode minor-mode-overriding-map-alist))))
+    (should (eq (alist-get 'vim-normal-mode vim-emulation-map-alist) vim-normal-mode-map))))
 
 (define-derived-mode vim-test-rebind-mode nil "Rebind")
 
@@ -466,6 +467,24 @@ Return (RESULT REGION-ACTIVE) after the error."
   (with-temp-buffer
     (buffer-enable-undo)
     (should-error (vim-goto-last-change) :type 'user-error)))
+
+(defvar-keymap vim-test-minor-mode-map "j" #'ignore)
+
+(define-minor-mode vim-test-minor-mode
+  "Minor mode binding a single key.")
+
+(ert-deftest vim-test-emulation ()
+  (should-not (assq 'vim-normal-mode minor-mode-map-alist))
+  (should (memq 'vim-emulation-map-alist emulation-mode-map-alists))
+  (should (equal (assq 'vim-normal-mode minor-mode-alist) '(vim-normal-mode " <N>")))
+  (with-current-buffer (vim-test--setup "|a\nb" #'text-mode)
+    (unwind-protect
+        (progn
+          (vim-test-minor-mode 1)
+          (should (eq (keymap-lookup nil "j") #'vim-j))
+          (vim-change-mode-to-insert)
+          (should (eq (keymap-lookup nil "j") #'ignore)))
+      (vim-test-minor-mode -1))))
 
 (provide 'vim-tests)
 ;;; vim-tests.el ends here
