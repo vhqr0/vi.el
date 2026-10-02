@@ -3,7 +3,7 @@
 ;; Author: vhqr0 <zq_cmd@163.com>
 ;; URL: https://github.com/vhqr0/vim.el
 ;; Package-Requires: ((emacs "31.1"))
-;; Version: 0.1.0
+;; Version: 0.2.0
 ;; Keywords: emulations
 
 ;;; Commentary:
